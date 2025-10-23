@@ -4,6 +4,7 @@
   fetchFromGitHub,
   fetchurl,
   fetchpatch,
+  nix-update-script,
   cython,
   setuptools,
   alsa-lib,
@@ -30,6 +31,16 @@ let
         url = "https://github.com/pjsip/pjproject/archive/${version}.tar.gz";
         hash = "sha256-k2pMW5hgG1IyVGOjl93xGrQQbGp7BPjcfN03fvu1l94=";
       };
+      patches = [
+        # Backported https://github.com/pjsip/pjproject/commit/4a8d180529d6ffb0760838b1f8cadc4cb5f7ac03
+        ./pjsip-0001-NEON.patch
+
+        # Backported https://github.com/pjsip/pjproject/commit/f56fd48e23982c47f38574a3fd93ebf248ef3762
+        ./pjsip-0002-RISC-V.patch
+
+        # Backported https://github.com/pjsip/pjproject/commit/f94b18ef6e0c0b5d34eb274f85ac0a3b2cf9107a
+        ./pjsip-0003-LoongArch64.patch
+      ];
     };
     zrtpcpp = rec {
       # Hardcoded in get_dependencies.sh, NOT checked at buildtime
@@ -42,6 +53,15 @@ let
       };
     };
   };
+
+  applyPatchesWhenAvailable =
+    extDep: dir:
+    lib.optionalString (extDep ? patches) (
+      lib.strings.concatMapStringsSep "\n" (patch: ''
+        echo "Applying patch ${patch}"
+        patch -p1 -d ${dir} < ${patch}
+      '') extDep.patches
+    );
 in
 buildPythonPackage rec {
   pname = "python3-sipsimple";
@@ -102,7 +122,10 @@ buildPythonPackage rec {
     cp -r --no-preserve=all ${passthru.extDeps.zrtpcpp.src} deps/ZRTPCPP
 
     bash ./get_dependencies.sh
-
+  ''
+  + applyPatchesWhenAvailable extDeps.pjsip "deps/pjsip"
+  + applyPatchesWhenAvailable extDeps.zrtpcpp "deps/ZRTPCPP"
+  + ''
     # Fails to link some static libs due to missing -lc DSO. Just use the compiler frontend instead of raw ld.
     substituteInPlace deps/pjsip/build/rules.mak \
       --replace-fail '$(LD)' "$CC"
@@ -119,6 +142,12 @@ buildPythonPackage rec {
 
   passthru = {
     inherit extDeps;
+    updateScript = nix-update-script {
+      extraArgs = [
+        "--version-regex"
+        "^(.*)-mac$"
+      ];
+    };
   };
 
   meta = {
@@ -128,9 +157,5 @@ buildPythonPackage rec {
     license = lib.licenses.gpl3Plus;
     teams = [ lib.teams.ngi ];
     maintainers = [ lib.maintainers.ethancedwards8 ];
-    badPlatforms = [
-      # ../../webrtc/src/webrtc//modules/audio_processing/aec/aec_core_sse2.c:15:10: fatal error: emmintrin.h: No such file or directory
-      "aarch64-linux"
-    ];
   };
 }

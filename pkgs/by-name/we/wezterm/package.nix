@@ -28,14 +28,14 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "wezterm";
-  version = "0-unstable-2025-07-10";
+  version = "0-unstable-2025-10-05";
 
   src = fetchFromGitHub {
-    owner = "wez";
+    owner = "wezterm";
     repo = "wezterm";
-    rev = "85c587f9f3d8be49dfa252da116fc9ca290df113";
+    rev = "db5d7437389eac5f63ad32e3b50d95b2b86065d1";
     fetchSubmodules = true;
-    hash = "sha256-hyyKC5BXeIbgP+bXxtvIz1LZUDoUJ6+em/PrX/TEg4k=";
+    hash = "sha256-4OzgrXsSq68CP6iImhqW896X6ekv2seg4kaH3md6QLs=";
   };
 
   postPatch = ''
@@ -58,7 +58,7 @@ rustPlatform.buildRustPackage rec {
   # https://github.com/wezterm/wezterm/blob/main/nix/flake.nix#L134
   auditable = false;
 
-  cargoHash = "sha256-chMbDMT8UWaiGovlzYn1UD8VFqb9UYHMDDx/A62wQsY=";
+  cargoHash = "sha256-QjYxDcWTbLTmtQEK6/ujwaDwdY+4C6EIOZ8I0hYIx00=";
 
   nativeBuildInputs = [
     installShellFiles
@@ -156,7 +156,7 @@ rustPlatform.buildRustPackage rec {
 
   meta = with lib; {
     description = "GPU-accelerated cross-platform terminal emulator and multiplexer written by @wez and implemented in Rust";
-    homepage = "https://wezfurlong.org/wezterm";
+    homepage = "https://wezterm.org";
     license = licenses.mit;
     mainProgram = "wezterm";
     maintainers = with maintainers; [

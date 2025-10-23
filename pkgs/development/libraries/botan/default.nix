@@ -1,6 +1,7 @@
 {
   lib,
   stdenv,
+  fetchpatch,
   fetchurl,
   pkgsStatic,
   python3,
@@ -12,6 +13,7 @@
   esdm,
   tpm2-tss,
   static ? stdenv.hostPlatform.isStatic, # generates static libraries *only*
+  windows,
 
   # build ESDM RNG plugin
   withEsdm ? false,
@@ -73,11 +75,14 @@ let
       ++ lib.optionals (stdenv.hostPlatform.isLinux && withTpm2) [
         tpm2-tss
       ]
-      ++ lib.optionals (lib.versionAtLeast version "3.6.0") [
+      ++ lib.optionals (lib.versionAtLeast version "3.6.0" && !stdenv.hostPlatform.isMinGW) [
         jitterentropy
       ]
-      ++ lib.optionals (lib.versionAtLeast version "3.7.0" && withEsdm) [
+      ++ lib.optionals (lib.versionAtLeast version "3.7.0" && withEsdm && !stdenv.hostPlatform.isMinGW) [
         esdm
+      ]
+      ++ lib.optionals (stdenv.hostPlatform.isMinGW) [
+        windows.pthreads
       ];
 
       buildTargets = [
@@ -105,10 +110,10 @@ let
       ++ lib.optionals (stdenv.hostPlatform.isLinux && withTpm2) [
         "--with-tpm2"
       ]
-      ++ lib.optionals (lib.versionAtLeast version "3.6.0") [
+      ++ lib.optionals (lib.versionAtLeast version "3.6.0" && !stdenv.hostPlatform.isMinGW) [
         "--enable-modules=jitter_rng"
       ]
-      ++ lib.optionals (lib.versionAtLeast version "3.7.0" && withEsdm) [
+      ++ lib.optionals (lib.versionAtLeast version "3.7.0" && withEsdm && !stdenv.hostPlatform.isMinGW) [
         "--enable-modules=esdm_rng"
       ]
       ++ lib.optionals (lib.versionAtLeast version "3.8.0" && policy != null) [
@@ -117,6 +122,9 @@ let
       ++ lib.optionals (lib.versionAtLeast version "3.8.0" && policy == "bsi") [
         "--enable-module=ffi"
         "--enable-module=shake"
+      ]
+      ++ lib.optionals (stdenv.hostPlatform.isMinGW) [
+        "--os=mingw"
       ];
 
       configurePhase = ''
@@ -151,19 +159,27 @@ let
           thillux
           nikstur
         ];
-        platforms = platforms.unix;
+        platforms = platforms.unix ++ lib.optionals (lib.versionAtLeast version "3.0") platforms.windows;
         license = licenses.bsd2;
       };
     });
 in
 {
   botan3 = common {
-    version = "3.8.1";
-    hash = "sha256-sDloHUuGGi9YU3Rti6gG9VPiOGntctie2/o8Pb+hfmg=";
+    version = "3.9.0";
+    hash = "sha256-jD8oS1jd1C6OQ+n6hqcSnYfqfD93aoDT2mPsIHIrCIM=";
   };
 
   botan2 = common {
     version = "2.19.5";
     hash = "sha256-3+6g4KbybWckxK8B2pp7iEh62y2Bunxy/K9S21IsmtQ=";
+    patches = [
+      # Fix build with gcc15
+      (fetchpatch {
+        name = "botan2-add-include-cstdint-gcc15.patch";
+        url = "https://src.fedoraproject.org/rpms/botan2/raw/c3fb7a3800df117e7ef8a7617ac8eacb31a4464a/f/f765f0b312f2998498f629d93369babfb2c975b4.patch";
+        hash = "sha256-8Yhxd5TCgxUMtRiv3iq5sQaVjDF+b9slppm38/6l6lw=";
+      })
+    ];
   };
 }

@@ -49,6 +49,7 @@
   pname,
   version,
   src,
+  passthru,
   meta,
 }:
 
@@ -57,6 +58,7 @@ stdenv.mkDerivation {
     pname
     version
     src
+    passthru
     meta
     ;
 
@@ -74,6 +76,9 @@ stdenv.mkDerivation {
       desktopName = "Postman";
       genericName = "Postman";
       categories = [ "Development" ];
+      mimeTypes = [ "x-scheme-handler/postman" ];
+      startupNotify = true;
+      startupWMClass = "postman";
     })
   ];
 

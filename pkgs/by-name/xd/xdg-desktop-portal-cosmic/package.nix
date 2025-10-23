@@ -17,22 +17,17 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "xdg-desktop-portal-cosmic";
-  version = "1.0.0-alpha.7";
+  version = "1.0.0-beta.2";
 
   # nixpkgs-update: no auto update
   src = fetchFromGitHub {
     owner = "pop-os";
     repo = "xdg-desktop-portal-cosmic";
     tag = "epoch-${finalAttrs.version}";
-    hash = "sha256-7yfrjKHuYOWPMMkHdGZ+g0hynh2TtSf4h8zW13tTus4=";
+    hash = "sha256-3FmNaT9tfDttINSbkwEaNW5i5hk9jH+fmMAg0UagttA=";
   };
 
-  env = {
-    VERGEN_GIT_COMMIT_DATE = "2025-04-08";
-    VERGEN_GIT_SHA = finalAttrs.src.tag;
-  };
-
-  cargoHash = "sha256-fOaLeWtrjgBDSShC5OmBZKODNQn4bp/+iPZX5ZMQFqk=";
+  cargoHash = "sha256-gaDVt/0QPFZHnt9veUo5bvZECxKZcIrja/QdLBn/Xi4=";
 
   separateDebugInfo = true;
 

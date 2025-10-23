@@ -36,6 +36,7 @@
   sympy,
   islpy,
   matplotlib,
+  immutabledict,
 
   # tests
   pytest,
@@ -43,9 +44,10 @@
   mpiCheckPhaseHook,
   writableTmpDirAsHomeHook,
 
-  # passthru.tests
+  # passthru
   firedrake,
   mpich,
+  nix-update-script,
 }:
 let
   firedrakePackages = lib.makeScope newScope (self: {
@@ -128,6 +130,8 @@ buildPythonPackage rec {
     sympy
     # required by script spydump
     matplotlib
+    # required by pyop2
+    immutabledict
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [
     islpy
@@ -170,6 +174,16 @@ buildPythonPackage rec {
   '';
 
   passthru = {
+    # python updater script sets the wrong tag
+    skipBulkUpdate = true;
+
+    updateScript = nix-update-script {
+      extraArgs = [
+        "--version-regex"
+        "([0-9.]+)"
+      ];
+    };
+
     tests = lib.optionalAttrs stdenv.hostPlatform.isLinux {
       mpich = firedrake.override {
         petsc4py = petsc4py.override { mpi = mpich; };

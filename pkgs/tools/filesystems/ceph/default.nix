@@ -50,6 +50,7 @@
   kmod,
   libcap,
   libcap_ng,
+  libnbd,
   libnl,
   libxml2,
   lmdb,
@@ -360,10 +361,10 @@ let
   );
   inherit (ceph-python-env.python) sitePackages;
 
-  version = "19.2.2";
+  version = "19.2.3";
   src = fetchurl {
     url = "https://download.ceph.com/tarballs/ceph-${version}.tar.gz";
-    hash = "sha256-7FD9LJs25VzUCRIBm01Cm3ss1YLTN9YLwPZnHSMd8rs=";
+    hash = "sha256-zlgp28C81SZbaFJ4yvQk4ZgYz4K/aZqtcISTO8LscSU=";
   };
 in
 rec {
@@ -372,14 +373,6 @@ rec {
     inherit src version;
 
     patches = [
-      (fetchpatch2 {
-        name = "ceph-s3select-arrow-18-compat.patch";
-        url = "https://github.com/ceph/s3select/commit/f333ec82e6e8a3f7eb9ba1041d1442b2c7cd0f05.patch";
-        hash = "sha256-21fi5tMIs/JmuhwPYMWtampv/aqAe+EoPAXZLJlOvgo=";
-        stripLen = 1;
-        extraPrefix = "src/s3select/";
-      })
-
       ./boost-1.85.patch
 
       (fetchpatch2 {
@@ -394,13 +387,11 @@ rec {
       # * <https://github.com/ceph/ceph/pull/60999>
       ./boost-1.86-PyModule.patch
 
-      # TODO: Remove with Ceph >= 19.2.3
       (fetchpatch2 {
-        name = "ceph-squid-client-disallow-unprivileged-users-to-escalate-root-privileges.patch";
-        url = "https://github.com/ceph/ceph/commit/380da5049e8ea7c35f34022fba24d3e2d4db6dd8.patch?full_index=1";
-        hash = "sha256-hVJ1v/n2YCJLusw+DEyK12MG73sJ/ccwbSc+2pLRxvw=";
+        name = "ceph-cmake-4.patch";
+        url = "https://gitlab.alpinelinux.org/ashpool/aports/-/raw/d22b70eafe33c3daabe4eea6913c5be87d9463ad/community/ceph19/cpp_redis.patch";
+        hash = "sha256-wxPIsYt25CjXhJ6kmr/MXwFD58Sl4y4W+r9jAMND+uw=";
       })
-
     ];
 
     nativeBuildInputs = [
@@ -441,6 +432,7 @@ rec {
         gtest
         icu
         libcap
+        libnbd
         libnl
         libxml2
         lmdb
@@ -511,6 +503,11 @@ rec {
         --replace "/sbin/modinfo"  "${kmod}/bin/modinfo" \
         --replace "/sbin/modprobe" "${kmod}/bin/modprobe" \
         --replace "/bin/grep" "${gnugrep}/bin/grep"
+
+      # Patch remount to use full path to mount(8), otherwise ceph-fuse fails when run
+      # from a systemd unit for example.
+      substituteInPlace src/client/fuse_ll.cc \
+        --replace-fail "mount -i -o remount" "${util-linux}/bin/mount -i -o remount"
 
       # The install target needs to be in PYTHONPATH for "*.pth support" check to succeed
       export PYTHONPATH=$PYTHONPATH:$lib/${sitePackages}:$out/${sitePackages}
